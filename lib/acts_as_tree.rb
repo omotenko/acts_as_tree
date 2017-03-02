@@ -8,6 +8,8 @@ module ActsAsTree
     raise "acts_as_tree 1.0 is not compatible with Rails 2.3 or older"
   end
 
+  class InfinityLoop < StandardError; end
+
   def self.included(base)
     base.extend(ClassMethods)
   end
@@ -248,7 +250,13 @@ module ActsAsTree
     #   subchild1.ancestors # => [child1, root]
     def ancestors
       node, nodes = self, []
-      nodes << node = node.parent while node.parent
+      while node.parent
+        node = node.parent
+        if nodes.include?(node)
+          raise InfinityLoop
+        end
+        nodes << node
+      end
       nodes
     end
 
